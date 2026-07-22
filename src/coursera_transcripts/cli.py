@@ -10,6 +10,7 @@ from rich.theme import Theme
 
 from .api import CourseAPI
 from .downloader import TranscriptDownloader
+from . import __version__
 
 # ── Custom theme ──────────────────────────────────────────────────────
 custom_theme = Theme({
