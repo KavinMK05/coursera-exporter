@@ -36,6 +36,7 @@ def _build_module_lookup(materials_data: dict) -> dict:
         lookup[module["id"]] = {
             "name": module["name"],
             "slug": module.get("slug", module["id"]),
+            "lessonIds": module.get("lessonIds", []),
         }
     return lookup
 
@@ -46,8 +47,52 @@ def _build_lesson_lookup(materials_data: dict) -> dict:
         lookup[lesson["id"]] = {
             "name": lesson["name"],
             "slug": lesson.get("slug", lesson["id"]),
+            "elementIds": lesson.get("elementIds", []),
         }
     return lookup
+
+
+def _build_item_lookup(materials_data: dict) -> dict:
+    lookup = {}
+    for item in materials_data.get("linked", {}).get("onDemandCourseMaterialItems.v2", []):
+        lookup[item["id"]] = item
+    return lookup
+
+
+def _get_ordered_lectures(
+    materials_data: dict,
+    module_lookup: dict,
+    lesson_lookup: dict,
+    item_lookup: dict,
+) -> list:
+    elements = materials_data.get("elements", [])
+    if not elements:
+        return []
+    ordered_module_ids = elements[0].get("moduleIds", [])
+    if not ordered_module_ids:
+        return []
+
+    lectures = []
+    for module_pos, module_id in enumerate(ordered_module_ids, 1):
+        lesson_ids = module_lookup.get(module_id, {}).get("lessonIds", [])
+        item_pos = 0
+        for lesson_id in lesson_ids:
+            element_ids = lesson_lookup.get(lesson_id, {}).get("elementIds", [])
+            for element_id in element_ids:
+                item = item_lookup.get(element_id)
+                if item is None:
+                    continue
+                content_type = item.get("contentSummary", {}).get("typeName", "")
+                if content_type != "lecture":
+                    continue
+                if item.get("isLocked", False):
+                    continue
+                item_pos += 1
+                stamped = dict(item)
+                stamped["_module_index"] = module_pos
+                stamped["_lecture_index"] = item_pos
+                lectures.append(stamped)
+    return lectures
 
 
 def _get_lecture_items(materials_data: dict) -> list:
@@ -102,7 +147,10 @@ class TranscriptDownloader:
         course_id = _extract_course_id(materials)
         module_lookup = _build_module_lookup(materials)
         lesson_lookup = _build_lesson_lookup(materials)
-        lecture_items = _get_lecture_items(materials)
+        item_lookup = _build_item_lookup(materials)
+        lecture_items = _get_ordered_lectures(materials, module_lookup, lesson_lookup, item_lookup)
+        if not lecture_items:
+            lecture_items = _get_lecture_items(materials)  # fallback: unordered, no prefixes
 
         course_dir = self.output_dir / course_slug
         course_dir.mkdir(parents=True, exist_ok=True)
@@ -160,7 +208,11 @@ class TranscriptDownloader:
                 module_info = module_lookup.get(module_id, {})
                 module_slug = module_info.get("slug", f"module-{module_id}")
 
-                module_dir = course_dir / module_slug
+                module_index = item.get("_module_index")
+                if module_index is not None:
+                    module_dir = course_dir / f"{module_index:02d}_{module_slug}"
+                else:
+                    module_dir = course_dir / module_slug
                 module_dir.mkdir(parents=True, exist_ok=True)
 
                 # Fetch video data
@@ -189,7 +241,11 @@ class TranscriptDownloader:
                     progress.advance(task)
                     continue
 
-                filename = f"{item_name}.{self.fmt}"
+                lecture_index = item.get("_lecture_index")
+                if lecture_index is not None:
+                    filename = f"{lecture_index:02d}_{item_name}.{self.fmt}"
+                else:
+                    filename = f"{item_name}.{self.fmt}"
                 filepath = module_dir / filename
                 filepath.write_text(subtitle_text, encoding="utf-8")
 
