@@ -25,6 +25,9 @@ custom_theme = Theme({
 
 console = Console(theme=custom_theme)
 
+GITHUB_URL = "https://github.com/KavinMK05/coursera-transcript-generator"
+GITHUB_SPONSORS_URL = "https://github.com/sponsors/KavinMK05?frequency=recurring"
+
 BANNER = r"""[bright_cyan]
    ██████╗ ██████╗ ██╗   ██╗██████╗ ███████╗███████╗██████╗  █████╗
   ██╔════╝██╔═══██╗██║   ██║██╔══██╗██╔════╝██╔════╝██╔══██╗██╔══██╗
@@ -42,6 +45,26 @@ def _show_banner() -> None:
     subtitle.append(f"v{__version__}", style="dim bright_cyan")
     console.print(subtitle, justify="center")
     console.print()
+
+
+def _show_star_message() -> None:
+    message = (
+        "[bold bright_magenta]⭐  Enjoying Coursera Transcript Generator?[/bold bright_magenta]\n"
+        "[muted]If this tool saved you time, please star it on GitHub — it really helps!\n[/muted]"
+        f"[link={GITHUB_URL}][bright_cyan]{GITHUB_URL}[/bright_cyan][/link]\n\n"
+        "[bold bright_magenta]💛  Love it? Consider supporting the project.[/bold bright_magenta]\n"
+        "[muted]Your sponsorship keeps the tool maintained and free for everyone.\n[/muted]"
+        f"[link={GITHUB_SPONSORS_URL}][bright_cyan]{GITHUB_SPONSORS_URL}[/bright_cyan][/link]"
+    )
+    console.print()
+    console.print(
+        Panel(
+            message,
+            title="[brand]💛  Support the project[/brand]",
+            border_style="bright_cyan",
+            padding=(1, 2),
+        )
+    )
 
 
 def _normalize_cookie(raw: str) -> str:
@@ -185,7 +208,7 @@ def main():
     )
 
     try:
-        downloader.fetch_all_transcripts(slug)
+        stats = downloader.fetch_all_transcripts(slug)
     except ValueError as e:
         console.print(f"\n[error]  ✖  {e}[/error]")
         raise SystemExit(1)
@@ -195,6 +218,10 @@ def main():
     except Exception as e:
         console.print(f"\n[error]  ✖  Unexpected error: {e}[/error]")
         raise SystemExit(1)
+    else:
+        # Only nudge for a star when the export actually downloaded something.
+        if stats.get("success"):
+            _show_star_message()
 
 
 if __name__ == "__main__":

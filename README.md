@@ -6,6 +6,7 @@ A beautiful CLI tool to bulk-download transcripts and subtitles from any Courser
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-brightgreen)
+[![GitHub stars](https://img.shields.io/github/stars/KavinMK05/coursera-transcript-generator?style=social)](https://github.com/KavinMK05/coursera-transcript-generator)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/coursera-transcripts?period=total&units=NONE&left_color=BLACK&right_color=RED&left_text=downloads)](https://pepy.tech/projects/coursera-transcripts)
 
 ---
@@ -37,6 +38,16 @@ pip install -e .
 
 ## 🚀 Usage
 
+### Quick Start
+
+No flags needed — just run the command and follow the prompts:
+
+```bash
+coursera-transcripts
+```
+
+That's it. The tool walks you through everything interactively, so you never have to memorize flags.
+
 ### Interactive Mode (recommended)
 
 Just run the command with no arguments — it will guide you through everything:
@@ -53,7 +64,7 @@ You'll be prompted for:
 
 ### CLI Mode
 
-Pass everything as flags for scripting / automation:
+Prefer to skip the prompts? Pass everything as flags for scripting / automation:
 
 ```bash
 coursera-transcripts \
