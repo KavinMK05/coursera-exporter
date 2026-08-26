@@ -1,7 +1,7 @@
 [project]
-name = "coursera-transcripts"
+name = "coursera-exporter"
 dynamic = ["version"]
-description = "CLI tool to extract Coursera course transcripts/subtitles"
+description = "CLI tool to download Coursera course transcripts, videos, and assets"
 readme = "README.md"
 authors = [
   { name="Kavin", email="your-email@example.com" }
@@ -23,11 +23,11 @@ dependencies = [
 ]
 
 [project.scripts]
-coursera-transcripts = "coursera_transcripts.cli:main"
+coursera-exporter = "coursera_exporter.cli:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
-version = {attr = "coursera_transcripts.__version__"}
+version = {attr = "coursera_exporter.__version__"}

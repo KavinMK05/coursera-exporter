@@ -25,7 +25,7 @@ custom_theme = Theme({
 
 console = Console(theme=custom_theme)
 
-GITHUB_URL = "https://github.com/KavinMK05/coursera-transcript-generator"
+GITHUB_URL = "https://github.com/KavinMK05/coursera-exporter"
 GITHUB_SPONSORS_URL = "https://github.com/sponsors/KavinMK05?frequency=recurring"
 
 BANNER = r"""[bright_cyan]
@@ -40,7 +40,7 @@ BANNER = r"""[bright_cyan]
 
 def _show_banner() -> None:
     console.print(BANNER)
-    subtitle = Text("Transcript Generator", style="bold bright_magenta")
+    subtitle = Text("Coursera Exporter", style="bold bright_magenta")
     subtitle.append("  •  ", style="dim")
     subtitle.append(f"v{__version__}", style="dim bright_cyan")
     console.print(subtitle, justify="center")
@@ -49,7 +49,7 @@ def _show_banner() -> None:
 
 def _show_star_message() -> None:
     message = (
-        "[bold bright_magenta]⭐  Enjoying Coursera Transcript Generator?[/bold bright_magenta]\n"
+        "[bold bright_magenta]⭐  Enjoying Coursera Exporter?[/bold bright_magenta]\n"
         "[muted]If this tool saved you time, please star it on GitHub — it really helps!\n[/muted]"
         f"[link={GITHUB_URL}][bright_cyan]{GITHUB_URL}[/bright_cyan][/link]\n\n"
         "[bold bright_magenta]💛  Love it? Consider supporting the project.[/bold bright_magenta]\n"
@@ -112,35 +112,81 @@ def _prompt_slug() -> str:
     return slug.strip()
 
 
-def _prompt_options() -> tuple[str, str, Path]:
+def _prompt_toggle(question: str, default_yes: bool) -> bool:
+    default = "y" if default_yes else "n"
+    answer = Prompt.ask(
+        f"[bright_cyan]  ›[/bright_cyan] [bold]{question}[/bold] [muted](y/n)[/muted]",
+        choices=["y", "n"],
+        default=default,
+    )
+    return answer == "y"
+
+
+def _prompt_options() -> dict:
     console.print()
     console.print(
         Panel(
-            "[muted]Configure optional settings (press Enter for defaults).[/muted]",
+            "[muted]Choose what to export. You can pick any combination — including "
+            "videos or assets on their own.[/muted]",
             title="[brand]⚙  Options[/brand]",
             border_style="bright_cyan",
             padding=(1, 2),
         )
     )
-    language = Prompt.ask(
-        "[bright_cyan]  ›[/bright_cyan] [bold]Language[/bold]",
-        default="en",
-    )
-    fmt = Prompt.ask(
-        "[bright_cyan]  ›[/bright_cyan] [bold]Format[/bold] [muted](srt/txt)[/muted]",
-        choices=["srt", "txt"],
-        default="txt",
-    )
+    transcripts = _prompt_toggle("Download transcripts?", default_yes=True)
+    videos = _prompt_toggle("Download videos?", default_yes=False)
+    assets = _prompt_toggle("Download slides/PDFs (assets)?", default_yes=False)
+
+    quality = "best"
+    if videos:
+        quality = Prompt.ask(
+            "[bright_cyan]  ›[/bright_cyan] [bold]Video quality[/bold] "
+            "[muted](360/540/720/best)[/muted]",
+            choices=["360", "540", "720", "best"],
+            default="best",
+        )
+
+    language = "en"
+    fmt = "txt"
+    if transcripts:
+        language = Prompt.ask(
+            "[bright_cyan]  ›[/bright_cyan] [bold]Language[/bold]", default="en"
+        )
+        fmt = Prompt.ask(
+            "[bright_cyan]  ›[/bright_cyan] [bold]Format for Transcripts[/bold] [muted](srt/txt)[/muted]",
+            choices=["srt", "txt"],
+            default="txt",
+        )
+
     output = Prompt.ask(
         "[bright_cyan]  ›[/bright_cyan] [bold]Output directory[/bold]",
         default="./output",
     )
-    return language, fmt, Path(output).resolve()
+    return {
+        "transcripts": transcripts,
+        "videos": videos,
+        "assets": assets,
+        "quality": quality,
+        "language": language,
+        "fmt": fmt,
+        "output_dir": Path(output).resolve(),
+    }
+
+
+def _build_enabled(transcripts: bool, videos: bool, assets: bool) -> set[str]:
+    enabled = set()
+    if transcripts:
+        enabled.add("transcripts")
+    if videos:
+        enabled.add("videos")
+    if assets:
+        enabled.add("assets")
+    return enabled
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Download transcripts/subtitles from a Coursera course",
+        description="Download transcripts, videos, and assets from a Coursera course",
     )
     parser.add_argument(
         "--cookie", "-c",
@@ -153,7 +199,7 @@ def parse_args():
     parser.add_argument(
         "--output", "-o",
         default=None,
-        help="Parent output directory (default: ./output). Transcripts saved to {output}/{slug}/",
+        help="Parent output directory (default: ./output).",
     )
     parser.add_argument(
         "--language", "-l",
@@ -165,6 +211,27 @@ def parse_args():
         choices=["srt", "txt"],
         default=None,
         help="Subtitle format (default: txt)",
+    )
+    parser.add_argument(
+        "--videos",
+        action="store_true",
+        help="Download lecture videos.",
+    )
+    parser.add_argument(
+        "--assets",
+        action="store_true",
+        help="Download lecture assets (slides/PDFs).",
+    )
+    parser.add_argument(
+        "--no-transcripts",
+        action="store_true",
+        help="Disable transcripts (export videos/assets alone).",
+    )
+    parser.add_argument(
+        "--quality",
+        choices=["360", "540", "720", "best"],
+        default="best",
+        help="Video quality when --videos is set (default: best).",
     )
     return parser.parse_args()
 
@@ -188,12 +255,33 @@ def main():
     slug = args.slug if args.slug else _prompt_slug()
 
     # Options
-    if interactive and (args.language is None and args.format is None and args.output is None):
-        language, fmt, output_dir = _prompt_options()
+    if interactive and (
+        args.language is None
+        and args.format is None
+        and args.output is None
+        and not args.videos
+        and not args.assets
+        and not args.no_transcripts
+        and args.quality == "best"
+    ):
+        opts = _prompt_options()
     else:
-        language = args.language or "en"
-        fmt = args.format or "txt"
-        output_dir = Path(args.output or "./output").resolve()
+        transcripts = not args.no_transcripts
+        opts = {
+            "transcripts": transcripts,
+            "videos": args.videos,
+            "assets": args.assets,
+            "quality": args.quality,
+            "language": args.language or "en",
+            "fmt": args.format or "txt",
+            "output_dir": Path(args.output or "./output").resolve(),
+        }
+
+    enabled = _build_enabled(opts["transcripts"], opts["videos"], opts["assets"])
+    if not enabled:
+        console.print("[error]  ✖  Select at least one content type "
+                      "(transcripts, videos, or assets).[/error]")
+        raise SystemExit(1)
 
     console.print()
 
@@ -201,14 +289,14 @@ def main():
     api = CourseAPI(cookie, console)
     downloader = TranscriptDownloader(
         api=api,
-        output_dir=output_dir,
-        language=language,
-        fmt=fmt,
+        output_dir=opts["output_dir"],
+        language=opts["language"],
+        fmt=opts["fmt"],
         console=console,
     )
 
     try:
-        stats = downloader.fetch_all_transcripts(slug)
+        stats = downloader.export(slug, enabled, quality=opts["quality"])
     except ValueError as e:
         console.print(f"\n[error]  ✖  {e}[/error]")
         raise SystemExit(1)
