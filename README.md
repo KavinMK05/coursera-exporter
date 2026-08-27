@@ -9,6 +9,8 @@ A beautiful CLI tool to bulk-download transcripts, subtitles, lecture videos, an
 [![GitHub stars](https://img.shields.io/github/stars/KavinMK05/coursera-exporter?style=social)](https://github.com/KavinMK05/coursera-exporter)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/coursera-exporter?period=total&units=NONE&left_color=BLACK&right_color=RED&left_text=downloads)](https://pepy.tech/projects/coursera-exporter)
 
+> 🌐 **Online docs:** https://kavinmk05.github.io/coursera-exporter/
+
 ---
 
 ## ✨ Features
