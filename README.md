@@ -32,8 +32,15 @@ A beautiful CLI tool to bulk-download transcripts, subtitles, lecture videos, an
 
 ## 📦 Installation
 
+Install from PyPI:
+
 ```bash
-# Clone the repo
+pip install coursera-exporter
+```
+
+Or install from source (for contributors / latest unreleased changes):
+
+```bash
 git clone https://github.com/KavinMK05/coursera-exporter.git
 cd coursera-exporter
 
