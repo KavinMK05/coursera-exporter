@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Installation — coursera-exporter docs</title>
-<meta name="description" content="Install coursera-exporter from source in editable mode.">
+<meta name="description" content="Install coursera-exporter from PyPI with a single pip command.">
 <script>(function(){var t=localStorage.getItem("theme")||"system";var d=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.add(d?"dark":"light");})();</script>
 <link rel="stylesheet" href="assets/styles.css">
 </head>
@@ -61,9 +61,14 @@
         <span>Getting Started</span>
       </div>
       <h1 class="page-title">Installation</h1>
-      <p class="page-lead">Install the CLI from source in editable mode. Requires Python 3.10+.</p>
+      <p class="page-lead">Install the CLI from PyPI with a single command. Requires Python 3.10+.</p>
       <hr class="page-divider">
       <div class="prose">
+<div class="codeblock"><div class="codeblock__head"><span class="codeblock__label">bash</span><button class="codeblock__copy" data-copy><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button></div><pre><code><span class="tok-prompt">$ </span><span class="tok-cmd">pip</span> install coursera-exporter</code></pre></div>
+<p>That's it — the <code>coursera-exporter</code> command is now available everywhere. Verify the installation:</p>
+<div class="codeblock"><div class="codeblock__head"><span class="codeblock__label">bash</span><button class="codeblock__copy" data-copy><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button></div><pre><code><span class="tok-prompt">$ </span><span class="tok-cmd">coursera-exporter</span> <span class="tok-flag">--version</span></code></pre></div>
+<h2 id="from-source">Install from source</h2>
+<p>If you want the latest unreleased changes or plan to contribute, install in editable mode from a clone of the repository:</p>
 <div class="codeblock"><div class="codeblock__head"><span class="codeblock__label">bash</span><button class="codeblock__copy" data-copy><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button></div><pre><code><span class="tok-prompt">$ </span><span class="tok-cmd">git</span> clone https://github.com/KavinMK05/coursera-exporter.git
 <span class="tok-prompt">$ </span><span class="tok-cmd">cd</span> coursera-exporter
 <span class="tok-prompt">$ </span><span class="tok-cmd">pip</span> install -e .</code></pre></div>

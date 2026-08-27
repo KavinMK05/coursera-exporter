@@ -115,7 +115,7 @@
   if (countEl) {
     var CACHE = "gh-stars-cache";
     function render(n) {
-      countEl.textContent = n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n);
+      countEl.textContent = n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : n > 0 ? String(n) : "GitHub";
     }
     try {
       var raw = localStorage.getItem(CACHE);
@@ -131,6 +131,8 @@
         render(n);
         try { localStorage.setItem(CACHE, JSON.stringify({ n: n, t: Date.now() })); } catch (e) {}
       })
-      .catch(function () {});
+      .catch(function () {
+        countEl.textContent = "GitHub";
+      });
   }
 })();
