@@ -136,6 +136,7 @@ def _prompt_options() -> dict:
     transcripts = _prompt_toggle("Download transcripts?", default_yes=True)
     videos = _prompt_toggle("Download videos?", default_yes=False)
     assets = _prompt_toggle("Download slides/PDFs (assets)?", default_yes=False)
+    readings = _prompt_toggle("Extract reading pages (text + attached files)?", default_yes=True)
 
     quality = "best"
     if videos:
@@ -166,6 +167,7 @@ def _prompt_options() -> dict:
         "transcripts": transcripts,
         "videos": videos,
         "assets": assets,
+        "readings": readings,
         "quality": quality,
         "language": language,
         "fmt": fmt,
@@ -173,7 +175,7 @@ def _prompt_options() -> dict:
     }
 
 
-def _build_enabled(transcripts: bool, videos: bool, assets: bool) -> set[str]:
+def _build_enabled(transcripts: bool, videos: bool, assets: bool, readings: bool) -> set[str]:
     enabled = set()
     if transcripts:
         enabled.add("transcripts")
@@ -181,12 +183,14 @@ def _build_enabled(transcripts: bool, videos: bool, assets: bool) -> set[str]:
         enabled.add("videos")
     if assets:
         enabled.add("assets")
+    if readings:
+        enabled.add("readings")
     return enabled
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Download transcripts, videos, and assets from a Coursera course",
+        description="Download transcripts, videos, assets, and reading pages from a Coursera course",
     )
     parser.add_argument(
         "--cookie", "-c",
@@ -223,9 +227,19 @@ def parse_args():
         help="Download lecture assets (slides/PDFs).",
     )
     parser.add_argument(
+        "--readings",
+        action="store_true",
+        help="Extract reading pages (text + attached files).",
+    )
+    parser.add_argument(
         "--no-transcripts",
         action="store_true",
         help="Disable transcripts (export videos/assets alone).",
+    )
+    parser.add_argument(
+        "--no-readings",
+        action="store_true",
+        help="Disable reading page extraction.",
     )
     parser.add_argument(
         "--quality",
@@ -262,6 +276,7 @@ def main():
         and not args.videos
         and not args.assets
         and not args.no_transcripts
+        and not args.no_readings
         and args.quality == "best"
     ):
         opts = _prompt_options()
@@ -271,16 +286,17 @@ def main():
             "transcripts": transcripts,
             "videos": args.videos,
             "assets": args.assets,
+            "readings": not args.no_readings,
             "quality": args.quality,
             "language": args.language or "en",
             "fmt": args.format or "txt",
             "output_dir": Path(args.output or "./output").resolve(),
         }
 
-    enabled = _build_enabled(opts["transcripts"], opts["videos"], opts["assets"])
+    enabled = _build_enabled(opts["transcripts"], opts["videos"], opts["assets"], opts["readings"])
     if not enabled:
         console.print("[error]  ✖  Select at least one content type "
-                      "(transcripts, videos, or assets).[/error]")
+                      "(transcripts, videos, assets, or readings).[/error]")
         raise SystemExit(1)
 
     console.print()

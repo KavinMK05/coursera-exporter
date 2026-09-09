@@ -85,6 +85,17 @@ class CourseAPI:
         response = self._get(url)
         return response.text
 
+    def get_supplement(self, course_id: str, item_id: str) -> dict:
+        """Fetch a supplement/reading page (CML content) for an item."""
+        url = (
+            f"{COURSERA_BASE}/api/onDemandSupplements.v1/"
+            f"{course_id}~{item_id}"
+            "?includes=asset"
+            "&fields=openCourseAssets.v1(typeName)%2CopenCourseAssets.v1(definition)"
+        )
+        response = self._get(url)
+        return response.json()
+
     def download_file(self, url: str, dest, referer: str | None = None, chunk_size: int = 1024 * 1024) -> int:
         """Stream a binary file (video/asset) to ``dest`` using the authenticated
         session. Returns the number of bytes written. ``dest`` may be a path or a
@@ -249,3 +260,66 @@ def parse_asset_items(materials_data: dict) -> list[dict]:
                 "url": url,
             })
     return assets
+
+
+def get_reading_items(materials_data: dict, item_lookup: dict | None = None) -> list[dict]:
+    """Collect reading pages (``supplement`` / ``supplementary`` items) from a
+    course materials response, in course order.
+
+    Mirrors the lecture ordering logic: walk the module→lesson→element chain
+    when it is available, otherwise fall back to the order items appear in the
+    response. Each returned dict is stamped with ``_module_index`` (1-based) and
+    ``_reading_index`` (per-module position) for consistent folder numbering.
+
+    Pure file-container supplements (``definition.assetTypeName == "asset"``)
+    are skipped — those belong to the assets pass.
+    """
+    items = materials_data.get("linked", {}).get("onDemandCourseMaterialItems.v2", [])
+    item_by_id = item_lookup or {it["id"]: it for it in items}
+    # Course-ordered module ids: prefer elements[0].moduleIds, fall back to the
+    # order modules appear in the linked list.
+    elements = materials_data.get("elements", [])
+    ordered_module_ids = (elements[0].get("moduleIds") if elements else None) or [
+        m["id"]
+        for m in materials_data.get("linked", {}).get("onDemandCourseMaterialModules.v1", [])
+        if m.get("id")
+    ]
+    module_pos = {mid: i for i, mid in enumerate(ordered_module_ids, 1)}
+
+    # Preferred path: module → lessonIds → elementIds
+    module_lookup = {
+        m["id"]: m for m in materials_data.get("linked", {}).get("onDemandCourseMaterialModules.v1", [])
+    }
+    lesson_lookup = {
+        l["id"]: l for l in materials_data.get("linked", {}).get("onDemandCourseMaterialLessons.v1", [])
+    }
+    ordered: list = []
+    for module_id in ordered_module_ids:
+        for lesson_id in module_lookup.get(module_id, {}).get("lessonIds", []):
+            for element_id in lesson_lookup.get(lesson_id, {}).get("elementIds", []):
+                item = item_by_id.get(element_id)
+                if item is not None:
+                    ordered.append(item)
+    if not ordered:
+        ordered = items
+
+    readings = []
+    per_module_counter: dict[str, int] = {}
+    for item in ordered:
+        content_type = item.get("contentSummary", {}).get("typeName", "")
+        if content_type not in ("supplementary", "supplement"):
+            continue
+        if item.get("isLocked", False):
+            continue
+        definition = item.get("contentSummary", {}).get("definition", {})
+        if definition.get("assetTypeName") == "asset":
+            # File-only container — handled by the assets pass.
+            continue
+        mid = item.get("moduleId", "")
+        m_index = module_pos.get(mid)
+        per_module_counter[mid] = per_module_counter.get(mid, 0) + 1
+        stamped = dict(item)
+        stamped["_module_index"] = m_index
+        stamped["_reading_index"] = per_module_counter[mid]
+        readings.append(stamped)
+    return readings

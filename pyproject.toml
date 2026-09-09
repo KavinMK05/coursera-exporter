@@ -1,7 +1,7 @@
 [project]
 name = "coursera-exporter"
 dynamic = ["version"]
-description = "CLI tool to download Coursera course transcripts, videos, and assets"
+description = "CLI tool to download Coursera course transcripts, videos, assets, and reading pages"
 readme = "README.md"
 authors = [
   { name="Kavin", email="your-email@example.com" }

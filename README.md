@@ -24,9 +24,13 @@ A beautiful CLI tool to bulk-download transcripts, subtitles, lecture videos, an
 - **Multi-language** — download transcripts in any available language
 - **Video downloads** — grab every lecture `.mp4` in your chosen quality (opt-in)
 - **Slides & PDFs** — download attached lecture assets/supplements (opt-in)
-- **Flexible exports** — pick any combination: transcripts, videos, or assets
-  alone, or all together. Transcripts and videos are kept together per lecture;
-  assets are saved into their own per-item folders under the module.
+- **Reading pages** — extract every reading page (syllabi, overviews, glossaries,
+  suggested readings…) as clean **Markdown + HTML**, with embedded file
+  attachments (PDFs, ZIPs…) downloaded alongside (on by default)
+- **Flexible exports** — pick any combination: transcripts, videos, assets, or
+  readings alone, or all together. Transcripts and videos are kept together per
+  lecture; assets and readings are saved into their own per-item folders under
+  the module.
 
 ---
 
@@ -74,8 +78,8 @@ You'll be prompted for:
 
 1. **CAUTH cookie** — your Coursera authentication token
 2. **Course slug** — the identifier from the course URL
-3. **Options** — three toggles (transcripts / videos / slides), then video
-   quality (when videos on), then language, format, and output directory
+3. **Options** — four toggles (transcripts / videos / slides / readings), then
+   video quality (when videos on), then language, format, and output directory
 
 ### CLI Mode
 
@@ -101,7 +105,9 @@ coursera-exporter \
 | `--output`       | `-o`  | `./output`   | Parent output directory                           |
 | `--videos`       |       | `off`        | Download lecture videos                           |
 | `--assets`       |       | `off`        | Download lecture assets (slides/PDFs)            |
+| `--readings`     |       | `on`         | Extract reading pages (text + attached files)    |
 | `--no-transcripts` |     | _(transcripts on)_ | Disable transcripts (export videos/assets alone) |
+| `--no-readings`  |       | _(readings on)_ | Disable reading page extraction                |
 | `--quality`      |       | `best`       | Video quality: `360`/`540`/`720`/`best`          |
 
 ---
@@ -144,18 +150,36 @@ coursera-exporter -c "YOUR_CAUTH" -s machine-learning --assets --no-transcripts
 > and it will be used automatically:
 > `pip install yt-dlp ffmpeg-downloader`
 
+## 📖 Reading Pages
+
+Every reading page (course overviews, syllabi, glossaries, suggested readings,
+supplementary articles…) is extracted as **clean Markdown** plus a styled
+**HTML** copy, and any files embedded in the reading (lecture transcript PDFs,
+spreadsheets, ZIPs…) are downloaded right next to them:
+
+```bash
+# Readings ALONE (skip transcripts)
+coursera-exporter -c "YOUR_CAUTH" -s machine-learning --no-transcripts
+
+# Transcripts + videos, without readings
+coursera-exporter -c "YOUR_CAUTH" -s machine-learning --no-readings
+```
+
+Readings use Coursera's authenticated asset CDN for attachments, so the same
+CAUTH cookie is required.
+
 ---
 
 ## 📁 Output Structure
 
-Transcripts and videos are grouped into per-lecture folders, and slides/PDFs
-(assets) into their own per-item folder — all under the same indexed module
-folder (e.g. `01_introduction-to-ml`):
+Transcripts and videos are grouped into per-lecture folders, while slides/PDFs
+(assets) and reading pages get their own per-item folders — all under the same
+indexed module folder (e.g. `01_introduction-to-ml`):
 
 ```
 output/
 └── machine-learning/
-    └── 01_introduction-to-ml/          ← module folder (shared by lectures + assets)
+    └── 01_introduction-to-ml/          ← module folder (shared by everything)
         ├── 01_Welcome to Machine Learning/
         │   ├── 01_Welcome to Machine Learning.txt   ← transcript
         │   └── 01_Welcome to Machine Learning.mp4   ← video (if enabled)
@@ -164,11 +188,13 @@ output/
         │   └── 02_What is Machine Learning.mp4
         ├── Lecture Slides/             ← each supplement item gets its own folder
         │   └── lecture-slides.pdf
-        └── Reading Notes/
-            └── notes.pdf
+        └── 01_Course Overview/         ← each reading page gets its own folder
+            ├── 01_Course Overview.md   ← extracted Markdown
+            ├── 01_Course Overview.html ← styled HTML copy
+            └── Week 1 Transcript.pdf   ← file embedded in the reading
 ```
 
-(When only one content type is selected, the corresponding folders simply
+(When only some content types are selected, the corresponding folders simply
 contain fewer files.)
 
 ---

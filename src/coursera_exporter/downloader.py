@@ -14,7 +14,8 @@ from rich.progress import (
 from rich.table import Table
 from rich.tree import Tree
 
-from .api import CourseAPI, parse_asset_items
+from .api import CourseAPI, parse_asset_items, get_reading_items
+from .readings import ReadingDownloader
 from .video_downloader import VideoDownloader, AssetDownloader, _sanitize_filename
 
 
@@ -174,6 +175,37 @@ def _build_asset_jobs(materials_data: dict, module_lookup: dict, course_dir: Pat
     return jobs
 
 
+def _build_reading_jobs(materials_data: dict, course_id: str, course_dir: Path) -> list[dict]:
+    """Build reading extraction jobs: one per reading page item, placed in the
+    indexed module folder (e.g. ``01_introduction-to-finance``), each in its own
+    per-reading subfolder (``01_Syllabus/``) so attachments stay together."""
+    module_lookup = {
+        m["id"]: m for m in materials_data.get("linked", {}).get("onDemandCourseMaterialModules.v1", [])
+    }
+    jobs: list[dict] = []
+    for item in get_reading_items(materials_data):
+        display_name = _sanitize_filename(item.get("name") or "reading")
+        module_id = item.get("moduleId", "")
+        module_info = module_lookup.get(module_id, {})
+        module_slug = module_info.get("slug", f"module-{module_id}")
+        module_index = item.get("_module_index")
+        module_dir = (
+            course_dir / f"{module_index:02d}_{module_slug}"
+            if module_index is not None
+            else course_dir / module_slug
+        )
+        reading_index = item.get("_reading_index")
+        file_base = f"{reading_index:02d}_{display_name}" if reading_index is not None else display_name
+        jobs.append({
+            "display_name": display_name,
+            "file_base": file_base,
+            "dir": module_dir / file_base,
+            "item_id": item["id"],
+            "course_id": course_id,
+        })
+    return jobs
+
+
 class TranscriptDownloader:
     def __init__(
         self,
@@ -316,6 +348,27 @@ class TranscriptDownloader:
             else:
                 c.print("[warning]  ⚠  No lecture assets (slides/PDFs) found.[/warning]")
 
+        # ── Readings pass ────────────────────────────────────────────
+        if "readings" in enabled:
+            reading_jobs = _build_reading_jobs(materials, course_id, course_dir)
+            if reading_jobs:
+                rd = ReadingDownloader(self.api, console=c)
+                with Progress(
+                    SpinnerColumn(style="bright_cyan"),
+                    TextColumn("[bold]{task.description}[/bold]"),
+                    BarColumn(bar_width=30, style="dim white", complete_style="bright_cyan", finished_style="bright_green"),
+                    MofNCompleteColumn(),
+                    TextColumn("•"),
+                    TimeElapsedColumn(),
+                    console=c,
+                    transient=False,
+                ) as progress:
+                    out = rd.run(reading_jobs, progress)
+                results["readings"].extend(out["results"])
+                self._merge_stats(stats["readings"], out["stats"])
+            else:
+                c.print("[warning]  ⚠  No reading pages found in this course.[/warning]")
+
         # ── Results + summary ────────────────────────────────────────
         for kind in enabled:
             self._show_results(c, kind, results[kind])
@@ -364,6 +417,7 @@ class TranscriptDownloader:
         info_table.add_row("Videos", f"{'On' if 'videos' in enabled else 'Off'}"
                                       + (f" ({quality})" if "videos" in enabled else ""))
         info_table.add_row("Assets", "On" if "assets" in enabled else "Off")
+        info_table.add_row("Readings", "On" if "readings" in enabled else "Off")
         info_table.add_row("Output", str(course_dir))
         c.print()
         c.print(Panel(info_table, title="[brand]📋  Course Overview[/brand]", border_style="bright_cyan", padding=(1, 2)))
@@ -373,7 +427,7 @@ class TranscriptDownloader:
         if not results:
             return
         icon_map = {"✔": "bright_green", "⊘": "yellow", "❌": "red"}
-        label = {"transcripts": "📝  Transcripts", "videos": "🎬  Videos", "assets": "📎  Assets"}.get(kind, kind)
+        label = {"transcripts": "📝  Transcripts", "videos": "🎬  Videos", "assets": "📎  Assets", "readings": "📖  Readings"}.get(kind, kind)
         tree = Tree(f"[bold bright_cyan]{label}[/bold bright_cyan]")
         for icon, name, detail in results:
             style = icon_map.get(icon, "white")
@@ -384,7 +438,7 @@ class TranscriptDownloader:
     def _show_summary(self, c, course_dir, stats_by_kind) -> None:
         parts = []
         for kind, st in stats_by_kind.items():
-            label = {"transcripts": "Transcripts", "videos": "Videos", "assets": "Assets"}.get(kind, kind)
+            label = {"transcripts": "Transcripts", "videos": "Videos", "assets": "Assets", "readings": "Readings"}.get(kind, kind)
             bits = []
             if st["success"]:
                 bits.append(f"[bright_green]✔ {st['success']} {label}[/bright_green]")

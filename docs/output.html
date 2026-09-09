@@ -61,13 +61,13 @@
         <span>Reference</span>
       </div>
       <h1 class="page-title">Output Structure</h1>
-      <p class="page-lead">Transcripts and videos are grouped per-lecture; assets get their own per-item folders — all under indexed module folders.</p>
+      <p class="page-lead">Transcripts and videos are grouped per-lecture; assets and reading pages get their own per-item folders — all under indexed module folders.</p>
       <hr class="page-divider">
       <div class="prose">
-<p>Transcripts and videos are grouped into per-lecture folders, and slides/PDFs (assets) into their own per-item folder — all under the same indexed module folder (e.g. <code>01_introduction-to-ml</code>):</p>
+<p>Transcripts and videos are grouped into per-lecture folders, while slides/PDFs (assets) and reading pages get their own per-item folders — all under the same indexed module folder (e.g. <code>01_introduction-to-ml</code>):</p>
 <div class="codeblock"><div class="codeblock__head"><span class="codeblock__label">text</span></div><pre><code>output/
 └── machine-learning/
-    └── 01_introduction-to-ml/          ← module folder (shared by lectures + assets)
+    └── 01_introduction-to-ml/          ← module folder (shared by everything)
         ├── 01_Welcome to Machine Learning/
         │   ├── 01_Welcome to Machine Learning.txt   ← transcript
         │   └── 01_Welcome to Machine Learning.mp4   ← video (if enabled)
@@ -76,9 +76,11 @@
         │   └── 02_What is Machine Learning.mp4
         ├── Lecture Slides/             ← each supplement item gets its own folder
         │   └── lecture-slides.pdf
-        └── Reading Notes/
-            └── notes.pdf</code></pre></div>
-<p>When only one content type is selected, the corresponding folders simply contain fewer files.</p>
+        └── 01_Course Overview/         ← each reading page gets its own folder
+            ├── 01_Course Overview.md   ← extracted Markdown
+            ├── 01_Course Overview.html ← styled HTML copy
+            └── Week 1 Transcript.pdf   ← file embedded in the reading</code></pre></div>
+<p>When only some content types are selected, the corresponding folders simply contain fewer files.</p>
       </div>
       <div class="pager">
         <a class="pager__card" href="videos.html">
