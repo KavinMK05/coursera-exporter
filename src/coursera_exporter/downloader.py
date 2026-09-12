@@ -15,6 +15,7 @@ from rich.table import Table
 from rich.tree import Tree
 
 from .api import CourseAPI, parse_asset_items, get_reading_items
+from .markdown import txt_to_markdown
 from .readings import ReadingDownloader
 from .video_downloader import VideoDownloader, AssetDownloader, _sanitize_filename
 
@@ -385,13 +386,17 @@ class TranscriptDownloader:
         if not videos:
             return None
         video = videos[0]
-        subtitles = video.get("subtitlesTxt" if self.fmt == "txt" else "subtitles", {})
+        subtitles = video.get("subtitlesTxt" if self.fmt in ("txt", "md") else "subtitles", {})
         return subtitles.get(self.language)
+
+    # Human-readable format names for progress messages.
+    _FMT_LABEL = {"md": "Markdown", "txt": "txt", "srt": "SRT"}
 
     def _write_transcript(self, video_data, lecture_dir, name, results_list, stats_dict) -> None:
         subtitle_url = self._get_subtitle_url(video_data)
         if not subtitle_url:
-            results_list.append(("⊘", name, f"[warning]No {self.language} {self.fmt} subtitles[/warning]"))
+            fmt_label = self._FMT_LABEL.get(self.fmt, self.fmt)
+            results_list.append(("⊘", name, f"[warning]No {self.language} {fmt_label} transcript[/warning]"))
             stats_dict["skipped"] += 1
             return
         try:
@@ -400,6 +405,8 @@ class TranscriptDownloader:
             results_list.append(("❌", name, f"[error]Download failed: {e}[/error]"))
             stats_dict["failed"] += 1
             return
+        if self.fmt == "md":
+            text = txt_to_markdown(text, name)
         lecture_dir.mkdir(parents=True, exist_ok=True)
         filename = f"{name}.{self.fmt}"
         (lecture_dir / filename).write_text(text, encoding="utf-8")

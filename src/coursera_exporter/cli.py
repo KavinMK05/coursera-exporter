@@ -148,15 +148,15 @@ def _prompt_options() -> dict:
         )
 
     language = "en"
-    fmt = "txt"
+    fmt = "md"
     if transcripts:
         language = Prompt.ask(
             "[bright_cyan]  ›[/bright_cyan] [bold]Language[/bold]", default="en"
         )
         fmt = Prompt.ask(
-            "[bright_cyan]  ›[/bright_cyan] [bold]Format for Transcripts[/bold] [muted](srt/txt)[/muted]",
-            choices=["srt", "txt"],
-            default="txt",
+            "[bright_cyan]  ›[/bright_cyan] [bold]Format for Transcripts[/bold] [muted](md/txt/srt)[/muted]",
+            choices=["md", "txt", "srt"],
+            default="md",
         )
 
     output = Prompt.ask(
@@ -212,9 +212,9 @@ def parse_args():
     )
     parser.add_argument(
         "--format",
-        choices=["srt", "txt"],
+        choices=["md", "txt", "srt"],
         default=None,
-        help="Subtitle format (default: txt)",
+        help="Transcript format (default: md)",
     )
     parser.add_argument(
         "--videos",
@@ -289,7 +289,7 @@ def main():
             "readings": not args.no_readings,
             "quality": args.quality,
             "language": args.language or "en",
-            "fmt": args.format or "txt",
+            "fmt": args.format or "md",
             "output_dir": Path(args.output or "./output").resolve(),
         }
 

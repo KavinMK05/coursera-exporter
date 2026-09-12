@@ -20,7 +20,8 @@ A beautiful CLI tool to bulk-download transcripts, subtitles, lecture videos, an
 - **Organized output** — files are neatly sorted into module folders
 - **Progress tracking** — real-time progress bar with download status
 - **Retry logic** — automatic retries with exponential backoff on failures
-- **Multiple formats** — supports both `.txt` (plain text) and `.srt` (subtitle) formats
+- **Multiple formats** — Markdown (`.md`) by default, with `.txt` (plain text)
+  and `.srt` (subtitle) formats available
 - **Multi-language** — download transcripts in any available language
 - **Video downloads** — grab every lecture `.mp4` in your chosen quality (opt-in)
 - **Slides & PDFs** — download attached lecture assets/supplements (opt-in)
@@ -90,7 +91,7 @@ coursera-exporter \
   --cookie "YOUR_CAUTH_VALUE" \
   --slug "machine-learning" \
   --language en \
-  --format txt \
+  --format srt \
   --output ./transcripts
 ```
 
@@ -101,7 +102,7 @@ coursera-exporter \
 | `--cookie`       | `-c`  | _(prompted)_ | CAUTH cookie value                                |
 | `--slug`         | `-s`  | _(prompted)_ | Course slug from URL                              |
 | `--language`     | `-l`  | `en`         | Subtitle language code                            |
-| `--format`       |       | `txt`        | Output format (`txt` or `srt`)                    |
+| `--format`       |       | `md`         | Transcript format (`md`, `txt`, or `srt`)         |
 | `--output`       | `-o`  | `./output`   | Parent output directory                           |
 | `--videos`       |       | `off`        | Download lecture videos                           |
 | `--assets`       |       | `off`        | Download lecture assets (slides/PDFs)            |
@@ -181,10 +182,10 @@ output/
 └── machine-learning/
     └── 01_introduction-to-ml/          ← module folder (shared by everything)
         ├── 01_Welcome to Machine Learning/
-        │   ├── 01_Welcome to Machine Learning.txt   ← transcript
+        │   ├── 01_Welcome to Machine Learning.md   ← transcript (Markdown, default)
         │   └── 01_Welcome to Machine Learning.mp4   ← video (if enabled)
         ├── 02_What is Machine Learning/
-        │   ├── 02_What is Machine Learning.txt
+        │   ├── 02_What is Machine Learning.md
         │   └── 02_What is Machine Learning.mp4
         ├── Lecture Slides/             ← each supplement item gets its own folder
         │   └── lecture-slides.pdf
@@ -196,6 +197,23 @@ output/
 
 (When only some content types are selected, the corresponding folders simply
 contain fewer files.)
+
+### Transcript format
+
+Transcripts are Markdown (`.md`) by default — the raw subtitle text is cleaned
+up and grouped into readable paragraphs under a heading:
+
+```markdown
+# 01_Welcome to Machine Learning
+
+Welcome to Machine Learning. In this course, you will learn about the most
+effective machine learning techniques... 
+
+You'll gain the practical skills needed to apply these methods... 
+```
+
+Use `--format txt` for the raw plain text exactly as Coursera serves it, or
+`--format srt` for timestamped subtitles.
 
 ---
 
